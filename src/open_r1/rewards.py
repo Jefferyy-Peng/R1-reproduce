@@ -1,6 +1,7 @@
 """Reward functions for GRPO training."""
 
 import math
+import os
 import re
 
 from latex2sympy2_extended import NormalizationConfig
@@ -9,8 +10,11 @@ from math_verify import LatexExtractionConfig, parse, verify
 
 def accuracy_reward(completions, solution, **kwargs):
     """Reward function that checks if the completion is the same as the ground truth."""
+    # print('computing accuracy reward')
     contents = [completion[0]["content"] for completion in completions]
+    prompts = [prompt[1]["content"] for prompt in kwargs['prompts']]
     rewards = []
+    num_success = 0
     for content, sol in zip(contents, solution):
         gold_parsed = parse(
             sol,
@@ -38,23 +42,28 @@ def accuracy_reward(completions, solution, **kwargs):
                 ],
                 extraction_mode="first_match",
             )
+            print(f'answer_parsed:{answer_parsed}')
             # Reward 1 if the content is the same as the ground truth, 0 otherwise
             reward = float(verify(answer_parsed, gold_parsed))
+            if reward == 1:
+                num_success += 1
         else:
             # If the gold solution is not parseable, we reward 1 to skip this example
             reward = 1.0
             print("Failed to parse gold solution: ", sol)
+            print("completion: ", content)
         rewards.append(reward)
 
-    return rewards
+    return rewards, [num_success / len(rewards)]
 
 
 def format_reward(completions, **kwargs):
     """Reward function that checks if the completion has a specific format."""
+    # print('computing format_reward')
     pattern = r"^<think>.*?</think>\s*<answer>.*?</answer>$"
     completion_contents = [completion[0]["content"] for completion in completions]
     matches = [re.match(pattern, content, re.DOTALL | re.MULTILINE) for content in completion_contents]
-    return [1.0 if match else 0.0 for match in matches]
+    return [1.0 if match else 0.0 for match in matches], None
 
 
 def reasoning_steps_reward(completions, **kwargs):
@@ -66,12 +75,13 @@ def reasoning_steps_reward(completions, **kwargs):
         \n\* - matches bullet points with asterisks
         First,|Second,|Next,|Finally, - matches transition words
     """
+    # print('computing reasoning_steps_reward')
     pattern = r"(Step \d+:|^\d+\.|\n-|\n\*|First,|Second,|Next,|Finally,)"
     completion_contents = [completion[0]["content"] for completion in completions]
     matches = [len(re.findall(pattern, content)) for content in completion_contents]
 
     # Magic nubmer 3 to encourage 3 steps and more, otherwise partial reward
-    return [min(1.0, count / 3) for count in matches]
+    return [min(1.0, count / 3) for count in matches], None
 
 
 def get_cosine_scaled_reward(
@@ -98,6 +108,7 @@ def get_cosine_scaled_reward(
             max_value_correct: Maximum reward for correct answers
             max_len: Maximum length for scaling
         """
+        # print('computing cos_scaled_reward')
         contents = [completion[0]["content"] for completion in completions]
         rewards = []
 
@@ -145,6 +156,6 @@ def get_cosine_scaled_reward(
             reward = min_value + 0.5 * (max_value - min_value) * (1.0 + cosine)
             rewards.append(float(reward))
 
-        return rewards
+        return rewards, None
 
     return cosine_scaled_reward
