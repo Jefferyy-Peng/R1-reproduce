@@ -9,15 +9,15 @@ deepspeed_config:
   zero_stage: 3
 distributed_type: DEEPSPEED
 downcast_bf16: 'no'
-machine_rank: 0  # Machine 1 (Master) → Set machine_rank=1 on the second machine
+machine_rank: 1  # dreal3 is the main machine dreal 2 rank is 1
 main_training_function: main
 mixed_precision: bf16
-num_machines: 2  
+num_machines: 2
 num_processes: 8
 rdzv_backend: static
 same_network: true
-main_process_ip: "dreal3.cis.udel.edu"  # Set this to the IP of Machine 1 (Master)
-main_process_port: 29500  # Ensure both machines use the same port
+main_process_ip: "128.175.224.2"  # Set this to the IP of Machine 1 (Master)
+main_process_port: 1024  # Ensure both machines use the same port
 tpu_env: []
 tpu_use_cluster: false
 tpu_use_sudo: false

@@ -65,27 +65,29 @@ def format_reward_func(completions, target, **kwargs):
 
     for completion, gt in zip(completions, target):
 
-        try:
+        # try:
             # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion
-            if random.random() < 0.1:  # 1% chance to write samples into a file
-                os.makedirs("completion_samples", exist_ok=True)
-                log_file = os.path.join("completion_samples", "completion_samples.txt")
-                with open(log_file, "a") as f:
-                    f.write(f"\n\n==============\n")
-                    f.write(completion)
+        completion = "<think>" + completion
 
-            # Check if the format is correct
-            regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
+        # Check if the format is correct
+        regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
-            match = re.search(regex, completion, re.DOTALL)
-            # if the format is not correct, reward is 0
-            if match is None or len(match.groups()) != 2:
-                rewards.append(0.0)
-            else:
-                rewards.append(1.0)
-        except Exception:
-            rewards.append(0.0)
+        match = re.search(regex, completion, re.DOTALL)
+        # if the format is not correct, reward is 0
+        if match is None or len(match.groups()) != 2:
+            reward = 0.0
+            rewards.append(reward)
+        else:
+            reward = 1.0
+            rewards.append(reward)
+        if random.random() < 0.1:  # 1% chance to write samples into a file
+            os.makedirs("completion_samples", exist_ok=True)
+            log_file = os.path.join("completion_samples", "completion_samples.txt")
+            with open(log_file, "a") as f:
+                f.write(f"\n\n==============\n")
+                f.write(completion)
+        # except Exception:
+        #     rewards.append(0.0)
     return rewards
 
 

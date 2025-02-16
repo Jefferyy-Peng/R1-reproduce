@@ -42,7 +42,6 @@ def accuracy_reward(completions, solution, **kwargs):
                 ],
                 extraction_mode="first_match",
             )
-            print(f'answer_parsed:{answer_parsed}')
             # Reward 1 if the content is the same as the ground truth, 0 otherwise
             reward = float(verify(answer_parsed, gold_parsed))
             if reward == 1:
